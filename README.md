@@ -125,5 +125,3 @@ Workflows are included to build and push images when changes are pushed to `main
 - If you want me to perform automated pushes or cleanups (remove embedded repos, remove the backup zip from Git history), tell me and I will proceed after creating a safe archive backup.
 
 ---
-
-If you'd like, I can now commit this README and push it to GitHub for you. Reply `yes` to proceed or `no` to keep it local.
