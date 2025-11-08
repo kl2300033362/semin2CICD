@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="100%" height="100%" fill="#1e2430"/>
+  <rect x="80" y="300" width="140" height="400" fill="#2e3b4e"/>
+  <rect x="260" y="220" width="140" height="480" fill="#33475b"/>
+  <rect x="440" y="360" width="140" height="340" fill="#2b3a4a"/>
+  <rect x="620" y="200" width="140" height="500" fill="#39495a"/>
+  <text x="60" y="760" font-size="36" fill="#ffffff" font-family="Arial">City</text>
+</svg>

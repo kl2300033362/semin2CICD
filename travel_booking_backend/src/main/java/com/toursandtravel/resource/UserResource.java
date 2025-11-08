@@ -153,17 +153,36 @@ public class UserResource {
 		address.setPincode(request.getPincode());
 		address.setStreet(request.getStreet());
 
-		Address savedAddress = this.addressService.addAddress(address);
+		Address savedAddress = null;
+		try {
+			savedAddress = this.addressService.addAddress(address);
+		} catch (Exception ex) {
+			LOG.error("Failed to save address", ex);
+			response.setResponseMessage("Registration failed while saving address: " + ex.getMessage());
+			response.setSuccess(false);
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 
 		if (savedAddress == null) {
-			throw new UserSaveFailedException("Registration Failed because of Technical issue:(");
+			response.setResponseMessage("Registration failed: unable to save address");
+			response.setSuccess(false);
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		user.setAddress(savedAddress);
-		existingUser = this.userService.addUser(user);
+		try {
+			existingUser = this.userService.addUser(user);
+		} catch (Exception ex) {
+			LOG.error("Failed to save user", ex);
+			response.setResponseMessage("Registration failed while saving user: " + ex.getMessage());
+			response.setSuccess(false);
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 
 		if (existingUser == null) {
-			throw new UserSaveFailedException("Registration Failed because of Technical issue:(");
+			response.setResponseMessage("Registration failed: unable to save user");
+			response.setSuccess(false);
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		response.setResponseMessage("User registered Successfully");

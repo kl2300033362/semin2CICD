@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import api from '../api';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -22,11 +23,18 @@ const ViewAllLocations = () => {
   }, []);
 
   const retrieveAllLocation = async () => {
-    const response = await axios.get(
-      "http://localhost:8080/api/location/fetch/all"
-    );
-    console.log(response.data);
-    return response.data;
+    try {
+      const response = await api.get("/api/location/fetch/all");
+      console.log(response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to retrieve locations', err);
+      toast.error('Unable to fetch locations. Is the backend running?', {
+        position: 'top-center',
+        autoClose: 2000,
+      });
+      return null;
+    }
   };
 
   const deleteLocation = (locationId, e) => {

@@ -1,0 +1,109 @@
+name: CI: Build and Push Docker images
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+env:
+  BACKEND_IMAGE_NAME: travel_backend
+  FRONTEND_IMAGE_NAME: travel_frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare optional remote repo inputs
+        run: |
+          echo "REMOTE_BACKEND_REPO=${{ secrets.REMOTE_BACKEND_REPO || '' }}" >> $GITHUB_ENV || true
+          echo "REMOTE_FRONTEND_REPO=${{ secrets.REMOTE_FRONTEND_REPO || '' }}" >> $GITHUB_ENV || true
+
+      - name: Clone remote repos when provided
+        run: |
+          set -e
+          if [ -n "$REMOTE_BACKEND_REPO" ]; then
+            echo "Cloning backend from $REMOTE_BACKEND_REPO"
+            git clone --depth 1 "$REMOTE_BACKEND_REPO" remote_backend
+          fi
+          if [ -n "$REMOTE_FRONTEND_REPO" ]; then
+            echo "Cloning frontend from $REMOTE_FRONTEND_REPO"
+            git clone --depth 1 "$REMOTE_FRONTEND_REPO" remote_frontend
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build backend jar
+        run: |
+          set -e
+          if [ -d remote_backend ]; then
+            cd remote_backend
+          else
+            cd travel_booking_backend
+          fi
+          if [ -f ./mvnw ]; then ./mvnw -B -DskipTests package; else mvn -B -DskipTests package; fi
+
+      - name: Determine Docker build contexts
+        run: |
+          if [ -d remote_backend ]; then
+            echo "BACKEND_CONTEXT=remote_backend" >> $GITHUB_ENV
+            echo "BACKEND_DOCKERFILE=remote_backend/Dockerfile.local" >> $GITHUB_ENV
+          else
+            echo "BACKEND_CONTEXT=travel_booking_backend" >> $GITHUB_ENV
+            echo "BACKEND_DOCKERFILE=travel_booking_backend/Dockerfile.local" >> $GITHUB_ENV
+          fi
+          if [ -d remote_frontend ]; then
+            echo "FRONTEND_CONTEXT=remote_frontend" >> $GITHUB_ENV
+            echo "FRONTEND_DOCKERFILE=remote_frontend/Dockerfile" >> $GITHUB_ENV
+          else
+            echo "FRONTEND_CONTEXT=travel_booking_frontend" >> $GITHUB_ENV
+            echo "FRONTEND_DOCKERFILE=travel_booking_frontend/Dockerfile" >> $GITHUB_ENV
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ env.BACKEND_CONTEXT }}
+          file: ${{ env.BACKEND_DOCKERFILE }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:cache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:cache,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ env.FRONTEND_CONTEXT }}
+          file: ${{ env.FRONTEND_DOCKERFILE }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:cache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:cache,mode=max
+
+      - name: Success summary
+        run: |
+          echo "Pushed: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          echo "Pushed: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}"

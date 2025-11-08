@@ -1,0 +1,13 @@
+target
+.mvn
+.git
+.idea
+logs
+**/*.log
+*.iml
+/.settings
+/.classpath
+/.projecttarget
+.git
+.DS_Store
+mvnw.cmd

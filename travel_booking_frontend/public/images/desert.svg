@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="100%" height="100%" fill="#f4e1a1"/>
+  <path d="M0,600 C150,450 350,750 600,600 C850,450 1050,750 1200,600 L1200,800 L0,800 Z" fill="#e0b86b"/>
+  <text x="60" y="720" font-size="36" fill="#5a3000" font-family="Arial">Desert</text>
+</svg>

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: tours_travel_system
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    image: kl2300033362/travel_backend:latest
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://db:3306/tours_travel_system?createDatabaseIfNotExist=true&useUnicode=true"
+      SPRING_DATASOURCE_USERNAME: "appuser"
+      SPRING_DATASOURCE_PASSWORD: "apppass"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+      JAVA_OPTS: "-Xms256m -Xmx768m"
+    ports:
+      - "8080:8080"
+
+  frontend:
+    image: kl2300033362/travel_frontend:latest
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: "http://backend:8080"
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: seminar_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: tours_travel_system
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./travel_booking_backend
+      dockerfile: Dockerfile
+    container_name: seminar_backend
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://db:3306/tours_travel_system?createDatabaseIfNotExist=true&useUnicode=true"
+      SPRING_DATASOURCE_USERNAME: "appuser"
+      SPRING_DATASOURCE_PASSWORD: "apppass"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+      JAVA_OPTS: "-Xms256m -Xmx768m"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./travel_booking_backend/logs:/app/logs
+
+  frontend:
+    build:
+      context: ./travel_booking_frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: "http://backend:8080"
+    container_name: seminar_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80" # serve nginx on host:3000
+    depends_on:
+      - backend
+
+  adminer:
+    image: adminer:latest
+    container_name: seminar_adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - db
+
+volumes:
+  db_data:

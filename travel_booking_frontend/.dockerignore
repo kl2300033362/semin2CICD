@@ -1,0 +1,14 @@
+node_modules
+build
+.git
+.env
+.DS_Store
+npm-debug.log
+yarn-error.log
+coverage
+/.vscodenode_modules
+build
+.git
+.DS_Store
+npm-debug.log
+.env

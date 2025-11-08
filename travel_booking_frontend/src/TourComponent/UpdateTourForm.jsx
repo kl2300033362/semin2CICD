@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 import { toast } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -38,10 +38,14 @@ const UpdateTourForm = () => {
   let navigate = useNavigate();
 
   const retrieveAllTransports = async () => {
-    const response = await axios.get(
-      "http://localhost:8080/api/transport/fetch/all"
-    );
-    return response.data;
+    try {
+      const response = await api.get(`/api/transport/fetch/all`);
+      return response.data;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to fetch transports', error?.message || error);
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -56,10 +60,14 @@ const UpdateTourForm = () => {
   }, []);
 
   const retrieveAllLocations = async () => {
-    const response = await axios.get(
-      "http://localhost:8080/api/location/fetch/all"
-    );
-    return response.data;
+    try {
+      const response = await api.get(`/api/location/fetch/all`);
+      return response.data;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to fetch locations', error?.message || error);
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -74,10 +82,14 @@ const UpdateTourForm = () => {
   }, []);
 
   const retrieveAllLodge = async () => {
-    const response = await axios.get(
-      "http://localhost:8080/api/lodge/fetch/all"
-    );
-    return response.data;
+    try {
+      const response = await api.get(`/api/lodge/fetch/all`);
+      return response.data;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to fetch lodges', error?.message || error);
+      return null;
+    }
   };
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer, toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 const UserRegister = () => {
   const navigate = useNavigate();
@@ -17,12 +18,14 @@ const UserRegister = () => {
     pincode: "",
     role: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (document.URL.indexOf("customer") != -1) {
-      user.role = "Customer";
-    } else if (document.URL.indexOf("tour-guide") != -1) {
-      user.role = "Tour Guide";
+    // set role based on URL when relevant; use setUser so state updates trigger re-render
+    if (document.URL.indexOf("customer") !== -1) {
+      setUser((u) => ({ ...u, role: "Customer" }));
+    } else if (document.URL.indexOf("tour-guide") !== -1) {
+      setUser((u) => ({ ...u, role: "Tour Guide" }));
     }
   }, []);
 
@@ -32,81 +35,46 @@ const UserRegister = () => {
 
   const saveUser = (e) => {
     e.preventDefault();
+    // Basic client-side validation
+    if (!user.emailId || !user.password || !user.role || user.role === "0") {
+      toast.error("Please provide email, password and role", { position: "top-center" });
+      return;
+    }
 
-    let jwtToken;
+    // show immediate feedback
+    toast.info("Registering user...", { position: "top-center", autoClose: 1000 });
 
-    fetch("http://localhost:8080/api/user/register", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        //    Authorization: "Bearer " + jwtToken,
-      },
-      body: JSON.stringify(user),
-    })
-      .then((result) => {
-        console.log("result", result);
-        result.json().then((res) => {
-          if (res.success) {
-            toast.success(res.responseMessage, {
-              position: "top-center",
-              autoClose: 1000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-            });
+    (async () => {
+      setIsSubmitting(true);
+      try {
+        // Ensure types match backend expectations: pincode is an int in DTO
+        const payload = {
+          ...user,
+          pincode: user.pincode ? parseInt(user.pincode, 10) : 0,
+        };
 
-            setTimeout(() => {
-              navigate("/user/login");
-            }, 1000);
-          } else if (!res.success) {
-            toast.error(res.responseMessage, {
-              position: "top-center",
-              autoClose: 1000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-            });
-
-            setTimeout(() => {
-              window.location.reload(true);
-            }, 1000); // Redirect after 3 seconds
-          } else {
-            toast.error("It seems server is down", {
-              position: "top-center",
-              autoClose: 1000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-            });
-
-            setTimeout(() => {
-              window.location.reload(true);
-            }, 1000); // Redirect after 3 seconds
-          }
-        });
-      })
-      .catch((error) => {
-        console.error(error);
-        toast.error("It seems server is down", {
-          position: "top-center",
-          autoClose: 1000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
-        setTimeout(() => {
-          window.location.reload(true);
-        }, 1000); // Redirect after 3 seconds
-      });
+        const res = await api.post("/api/user/register", payload);
+        const data = res.data;
+        if (data && data.success) {
+          toast.success(data.responseMessage || "Registered successfully", { position: "top-center" });
+          setTimeout(() => navigate("/user/login"), 800);
+        } else {
+          toast.error((data && data.responseMessage) || "Registration failed", { position: "top-center" });
+        }
+      } catch (err) {
+        console.error('Register error', err);
+        // If backend sent a useful message, show it
+        if (err && err.response && err.response.data && err.response.data.responseMessage) {
+          toast.error(err.response.data.responseMessage, { position: 'top-center' });
+        } else if (err && err.response && err.response.data && err.response.data.message) {
+          toast.error(err.response.data.message, { position: 'top-center' });
+        } else {
+          toast.error("Server error — please try again later", { position: "top-center" });
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   return (
@@ -239,11 +207,20 @@ const UserRegister = () => {
                 </div>
 
                 <div className="d-flex aligns-items-center justify-content-center">
-                  <input
+                  <button
                     type="submit"
                     className="btn bg-color custom-bg-text"
-                    value="Register User"
-                  />
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                        Registering...
+                      </>
+                    ) : (
+                      'Register User'
+                    )}
+                  </button>
                 </div>
                 <ToastContainer />
               </form>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import api from '../api';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -22,11 +23,19 @@ const ViewAllEvents = () => {
   }, []);
 
   const retrieveAllEvent = async () => {
-    const response = await axios.get(
-      "http://localhost:8080/api/event/fetch/all?status=Active"
-    );
-    console.log(response.data);
-    return response.data;
+    try {
+      // Use centralized api instance so baseURL can be configured via REACT_APP_API_URL
+      const response = await api.get("/api/event/fetch/all?status=Active");
+      console.log(response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to retrieve events', err);
+      toast.error('Unable to fetch events. Is the backend running?', {
+        position: 'top-center',
+        autoClose: 2000,
+      });
+      return null;
+    }
   };
 
   const deleteEvent = (eventId) => {
