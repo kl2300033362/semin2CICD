@@ -11,8 +11,12 @@ services:
       MYSQL_PASSWORD: apppass
     volumes:
       - db_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+    # Do not bind MySQL to the host by default; keeping the DB internal to the
+    # docker network avoids host-port collisions and still allows the backend
+    # service to reach it using the service name `db:3306`.
+    # If you need host access to MySQL, uncomment and change the mapping.
+    # ports:
+    #   - "3306:3306"
 
   backend:
     image: kl2300033362/travel_backend:latest
@@ -30,7 +34,10 @@ services:
     image: kl2300033362/travel_frontend:latest
     restart: unless-stopped
     environment:
-      REACT_APP_API_URL: "http://backend:8080"
+      # The React app runs in the browser, so it must call an address the
+      # browser can resolve. Point it to localhost so requests go to the
+      # backend bound on the host at 8080.
+      REACT_APP_API_URL: "http://localhost:8080"
     ports:
       - "3000:80"
     depends_on:

@@ -16,9 +16,12 @@ ENV REACT_APP_API_URL=${REACT_APP_API_URL}
 
 RUN npm run build
 
-FROM nginx:stable-alpine
-COPY --from=build /app/build /usr/share/nginx/html
+## Use a lightweight Apache httpd image to serve the static build. Some
+## hosts have issues executing the nginx binary in the alpine image; httpd
+## tends to be more portable across environments.
+FROM httpd:2.4-alpine
+COPY --from=build /app/build /usr/local/apache2/htdocs/
 
-# expose nginx on port 80 (we map to host:3000 in docker-compose)
+# Expose httpd on port 80 (mapped to host:3000 in docker-compose)
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["httpd-foreground"]
